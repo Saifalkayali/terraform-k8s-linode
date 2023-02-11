@@ -28,6 +28,17 @@ resource "linode_lke_cluster" "saifk8s" {
     }
 }
 
+
+// Setting up Linode Object Storage as a Terraform backend
+data "linode_object_storage_cluster" "primary" {
+  id = "us-east-1"
+}
+
+resource "linode_object_storage_bucket" "saif-tf-state" {
+  cluster = data.linode_object_storage_cluster.primary.id
+  label   = "saif-tf-state"
+}
+
 //Export this cluster's attributes
 output "kubeconfig" {
    value = linode_lke_cluster.saifk8s.kubeconfig
@@ -50,13 +61,4 @@ output "pool" {
    value = linode_lke_cluster.saifk8s.pool
 }
 
-// Setting up Linode Object Storage as a Terraform backend
-data "linode_object_storage_cluster" "primary" {
-  id = "us-east-1"
-}
-
-resource "linode_object_storage_bucket" "saif-tf-state" {
-  cluster = data.linode_object_storage_cluster.primary.id
-  label   = "saif-tf-state"
-}
     
