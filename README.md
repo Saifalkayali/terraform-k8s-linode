@@ -60,7 +60,6 @@ terraform {
 3. Create a Linode Personal Access token to apply the config and create the bucket and set it as an env var
 ```
 export TF_VAR_token=<TF_VAR_token>
-
 ```
 4. Configure storage access for terraform to be able to use the bucket as a backend as well as write to the bucket when the state is changed. This can be done on the Linode object storage [access keys tab](https://cloud.linode.com/object-storage/access-keys). Once the creds are obtained, run the following to initalize with the `access_key` and `secret_key` 
  ```
