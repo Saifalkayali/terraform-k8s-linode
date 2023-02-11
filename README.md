@@ -88,3 +88,22 @@ Above shows an update to the file since the last apply or destory command ran as
 
 
 ## Deploy a Site on LKE
+
+### Prerequisites
+[Git](https://www.linode.com/docs/guides/how-to-deploy-a-static-site-on-linode-kubernetes-engine/#install-git), [kubectl](https://www.linode.com/docs/guides/how-to-deploy-a-static-site-on-linode-kubernetes-engine/#install-kubectl), [Docker](https://www.linode.com/docs/guides/how-to-deploy-a-static-site-on-linode-kubernetes-engine/#install-docker), [Docker Hub Account](https://www.linode.com/docs/guides/how-to-deploy-a-static-site-on-linode-kubernetes-engine/#sign-up-for-a-docker-hub-account), [Hugo](https://www.linode.com/docs/guides/how-to-deploy-a-static-site-on-linode-kubernetes-engine/#install-hugo), and a [LKE cluster](https://www.linode.com/docs/guides/deploy-and-manage-a-cluster-with-linode-kubernetes-engine-a-tutorial/).
+
+### Create site using Hugo
+1. Clone this repo https://github.com/Saifalkayali/lke-saif-site
+2. Build image 
+```
+docker build -t mydockerhubusername/lke-saif-site:v1 .
+```
+3. Run image locally by running the following and browsing to http://localhost:8080/
+```
+docker run -p 8080:80 -d mydockerhubusername/lke-saif-site:v1
+```
+4. Push image to Docker Hub
+```
+docker push mydockerhubusername/lke-saif-site:v1
+```
+5.  kubectl apply -f static-site-deployment.yaml
