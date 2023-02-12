@@ -96,14 +96,14 @@ Above shows an update to the file since the last apply or destory command ran as
 1. Clone this repo https://github.com/Saifalkayali/lke-saif-site
 2. Build image 
 ```
-docker build -t mydockerhubusername/lke-saif-site:v1 .
+docker build -t <DOCKER_HUB_USERNAME>/lke-saif-site:v1 .
 ```
 3. Run image locally by running the following and browsing to http://localhost:8080/
 ```
-docker run -p 8080:80 -d mydockerhubusername/lke-saif-site:v1
+docker run -p 8080:80 -d<DOCKER_HUB_USERNAME>/lke-saif-site:v1
 ```
 4. Push image to Docker Hub
 ```
-docker push mydockerhubusername/lke-saif-site:v1
+docker push <DOCKER_HUB_USERNAME>/lke-saif-site:v1
 ```
 5.  kubectl apply -f static-site-deployment.yaml
