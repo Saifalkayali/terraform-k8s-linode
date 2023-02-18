@@ -1,5 +1,21 @@
 # terraform-k8s-linode
-Create K8s clusters with Terraform on Linode Kubernetes Engine (LKE), a managed Kubernetes service. In this project I took advantage of the Linode  [signup promotion](https://www.linode.com/lp/brand-free-credit/?utm_source=learnk8s&utm_medium=sponsor&utm_campaign=sponsor-learnk8s-terraform&utm_content=video-hardening_access&utm_term=) which includes  100 USD in credits to spend on any service for the next 60 days after signing  up. Now let's get building! 
+Create K8s clusters with Terraform on Linode Kubernetes Engine (LKE), a managed Kubernetes service. In this project I took advantage of the Linode  [signup promotion](https://www.linode.com/lp/brand-free-credit/?utm_source=learnk8s&utm_medium=sponsor&utm_campaign=sponsor-learnk8s-terraform&utm_content=video-hardening_access&utm_term=) which includes  100 USD in credits to spend on any service for the next 60 days after signing  up. Now let's get building!
+
+## Table of contents
+- [terraform-k8s-linode](#terraform-k8s-linode)
+  - [Table of contents](#table-of-contents)
+    - [Prerequisites](#prerequisites)
+  - [Getting started](#getting-started)
+  - [Deploy the cluster](#deploy-the-cluster)
+  - [Configure Terraform backend with Linode Object Storage](#configure-terraform-backend-with-linode-object-storage)
+  - [Deploy a Site on LKE](#deploy-a-site-on-lke)
+    - [Prerequisites](#prerequisites-1)
+    - [Create site using Hugo](#create-site-using-hugo)
+    - [Network Policy](#network-policy)
+
+
+
+
 
 ### Prerequisites
 - Install [Terraform](https://developer.hashicorp.com/terraform/downloads)
@@ -138,24 +154,6 @@ deployment.apps/static-site-deployment created
 ```
 Error from server (NotFound): the server could not find the requested resource
 ```
-6. Create a service to provide web traffic loadbalancing to the 3 nodes serving the site
-```
-kubectl apply -f service.yaml
-```
-Output: 
-```
-service/static-site-service created
-```
-7. Check the status of the service
-```
-kubectl get services
-```
-Output: 
-```
-NAME                  TYPE           CLUSTER-IP      EXTERNAL-IP     PORT(S)        AGE
-kubernetes            ClusterIP      10.128.0.1      <none>          443/TCP        18h
-static-site-service   LoadBalancer   10.128.158.25   104.200.27.83   80:32587/TCP   112s
-```
 8. Ensure your pods that are running the site are in a `running` status
 ```
 kubectl get pods
@@ -167,4 +165,26 @@ static-site-deployment-75cfbb745b-2jt9n   1/1     Running   0          9m33s
 static-site-deployment-75cfbb745b-6hxct   1/1     Running   0          9m33s
 static-site-deployment-75cfbb745b-wh4rp   1/1     Running   0          9m33s
 ```
+9. Create a service to provide web traffic loadbalancing to the 3 nodes serving the site
+```
+kubectl apply -f service.yaml
+```
+Output: 
+```
+service/static-site-service created
+```
+10. Check the status of the service
+```
+kubectl get services
+```
+Output: 
+```
+NAME                  TYPE           CLUSTER-IP      EXTERNAL-IP     PORT(S)        AGE
+kubernetes            ClusterIP      10.128.0.1      <none>          443/TCP        18h
+static-site-service   LoadBalancer   10.128.158.25   104.200.27.83   80:32587/TCP   112s
+```
+11. You may now reach the site via the `EXTERNAL-IP` in the web browser, in this case it's `104.200.27.83`.
+
+### Network Policy
+Exposing the site to the public internet is simple, but can also carry a security risk. If the plan is to develop a site using Hugo and deploy it permanently, I would suggest configuring a a [K8s network policy](https://kubernetes.io/docs/concepts/services-networking/network-policies/) and referencing the [Linode Kubernetes Security Best Practices ](https://www.linode.com/docs/guides/kubernetes-security-best-practices/)
 
