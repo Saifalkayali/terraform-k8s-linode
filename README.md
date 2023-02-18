@@ -1,5 +1,22 @@
 # terraform-k8s-linode
-Create K8s clusters with Terraform on Linode Kubernetes Engine (LKE), a managed Kubernetes service. In this project I took advantage of the Linode  [signup promotion](https://www.linode.com/lp/brand-free-credit/?utm_source=learnk8s&utm_medium=sponsor&utm_campaign=sponsor-learnk8s-terraform&utm_content=video-hardening_access&utm_term=) which includes  100 USD in credits to spend on any service for the next 60 days after signing  up. Now let's get building! 
+Create K8s clusters with Terraform on Linode Kubernetes Engine (LKE), a managed Kubernetes service. In this project I took advantage of the Linode  [signup promotion](https://www.linode.com/lp/brand-free-credit/?utm_source=learnk8s&utm_medium=sponsor&utm_campaign=sponsor-learnk8s-terraform&utm_content=video-hardening_access&utm_term=) which includes  100 USD in credits to spend on any service for the next 60 days after signing  up. Now let's get building!
+
+## Table of contents
+- [terraform-k8s-linode](#terraform-k8s-linode)
+  - [Table of contents](#table-of-contents)
+    - [Prerequisites](#prerequisites)
+  - [Getting started](#getting-started)
+  - [Deploy the cluster](#deploy-the-cluster)
+  - [Configure Terraform backend with Linode Object Storage](#configure-terraform-backend-with-linode-object-storage)
+  - [Deploy a Site on LKE](#deploy-a-site-on-lke)
+    - [Prerequisites](#prerequisites-1)
+    - [Create site using Hugo](#create-site-using-hugo)
+    - [Network Policy](#network-policy)
+    - [Tear Down The Site](#tear-down-the-site)
+
+
+
+
 
 ### Prerequisites
 - Install [Terraform](https://developer.hashicorp.com/terraform/downloads)
@@ -20,11 +37,25 @@ Create K8s clusters with Terraform on Linode Kubernetes Engine (LKE), a managed 
 4. Run ` terraform apply -var-file="terraform.tfvars"` to deploy the cluster. Now the cluster will be deployed and is ready to be connected to via `kubectl`
 5. Configure `kubectl` configs to connect to your cluster. This command will use the terraform output as an env var, decode it , and then insert it into the `kubectl` config file `kubeconfig.yaml`
     ```
-    export KUBE_VAR=`terraform output kubeconfig` && echo $KUBE_VAR | base64 -di > kube-config.yaml` 
+    export KUBE_VAR=`terraform output kubeconfig` && echo $KUBE_VAR | base64 -di > kubeconfig.yaml 
     ```
-6. Add the kubeconfig file to your $KUBECONFIG environment variable `export KUBECONFIG=kubeconfig.yaml`
-7. View your nodes ` kubectl get nodes`
-8. Tear down the resources you have created `terraform destroy --target linode_lke_cluster.saifk8s` 
+6. Add the kubeconfig file to your $KUBECONFIG environment variable
+```
+export KUBECONFIG=kubeconfig.yaml
+```
+7. View your nodes
+```
+kubectl get nodes
+```
+10. Tear down the resources you have created
+```
+terraform destroy --target linode_lke_cluster.saifk8s
+```
+11. Spin up the cluster again when you need it using
+```
+terraform plan
+terraform apply
+```
 
 ## Configure Terraform backend with Linode Object Storage
 
@@ -88,3 +119,95 @@ Above shows an update to the file since the last apply or destory command ran as
 
 
 ## Deploy a Site on LKE
+
+Deploy a site using the LKE cluster as a follow up from above Kubernetes sections. A container for a static site can be written simply which makes the site easy to deploy as a demo
+
+### Prerequisites
+[Git](https://www.linode.com/docs/guides/how-to-deploy-a-static-site-on-linode-kubernetes-engine/#install-git), [kubectl](https://www.linode.com/docs/guides/how-to-deploy-a-static-site-on-linode-kubernetes-engine/#install-kubectl), [Docker](https://www.linode.com/docs/guides/how-to-deploy-a-static-site-on-linode-kubernetes-engine/#install-docker), [Docker Hub Account](https://www.linode.com/docs/guides/how-to-deploy-a-static-site-on-linode-kubernetes-engine/#sign-up-for-a-docker-hub-account), [Hugo](https://www.linode.com/docs/guides/how-to-deploy-a-static-site-on-linode-kubernetes-engine/#install-hugo), and a [LKE cluster](https://www.linode.com/docs/guides/deploy-and-manage-a-cluster-with-linode-kubernetes-engine-a-tutorial/).
+
+### Create site using [Hugo](https://gohugo.io/)
+1. Pull down this repo
+```
+git clone https://github.com/Saifalkayali/lke-saif-site.git
+```
+2. Build image 
+```
+docker build -t <DOCKER_HUB_USERNAME>/lke-saif-site:v1 .
+```
+3. Run image locally by running the following and browsing to http://localhost:8080/
+```
+docker run -p 8080:80 -d<DOCKER_HUB_USERNAME>/lke-saif-site:v1
+```
+4. Push image to Docker Hub
+```
+docker push <DOCKER_HUB_USERNAME>/lke-saif-site:v1
+```
+5. Deploy Image to your K8s nodes
+```
+kubectl apply -f deployment.yaml
+```
+Output:
+```
+deployment.apps/static-site-deployment created
+```
+
+
+**NOTE:** ensure you've set your `KUBECONFIG` env var in the [Deploy the cluster ](https://github.com/Saifalkayali/terraform-k8s-linode#deploy-the-cluster)section  of this [README.md](https://github.com/Saifalkayali/terraform-k8s-linode#readme), otherwise you will get this error: 
+
+```
+Error from server (NotFound): the server could not find the requested resource
+```
+8. Ensure your pods that are running the site are in a `running` status
+```
+kubectl get pods
+```
+Output
+```
+NAME                                      READY   STATUS    RESTARTS   AGE
+static-site-deployment-75cfbb745b-2jt9n   1/1     Running   0          9m33s
+static-site-deployment-75cfbb745b-6hxct   1/1     Running   0          9m33s
+static-site-deployment-75cfbb745b-wh4rp   1/1     Running   0          9m33s
+```
+9. Create a service to provide web traffic loadbalancing to the 3 nodes serving the site
+```
+kubectl apply -f service.yaml
+```
+Output: 
+```
+service/static-site-service created
+```
+10. Check the status of the service
+```
+kubectl get services
+```
+Output: 
+```
+NAME                  TYPE           CLUSTER-IP      EXTERNAL-IP     PORT(S)        AGE
+kubernetes            ClusterIP      10.128.0.1      <none>          443/TCP        18h
+static-site-service   LoadBalancer   10.128.158.25   104.200.27.83   80:32587/TCP   112s
+```
+11. You may now reach the site via the `EXTERNAL-IP` in the web browser, in this case it's `104.200.27.83`.
+
+### Network Policy
+Exposing the site to the public internet is simple, but can also carry a security risk. If the plan is to develop a site using Hugo and deploy it permanently, I would suggest configuring a a [K8s network policy](https://kubernetes.io/docs/concepts/services-networking/network-policies/) and referencing the [Linode Kubernetes Security Best Practices ](https://www.linode.com/docs/guides/kubernetes-security-best-practices/)
+
+### Tear Down The Site
+1. Remove the Loadbalancer Service type to remove the site's internet accessability
+```
+kubectl delete service static-site-service
+```
+2. Remove the pods that are hosting the site's containers to stop running the site
+```
+kubectl delete deployment static-site-deployment
+```
+3. confirm the pods have been removed
+```
+kubectl get pods
+```
+Output: 
+```
+No resources found in default namespace
+```
+4. This confirms that the site deployment and service have been removed to conclude tearing down the site.
+
+
