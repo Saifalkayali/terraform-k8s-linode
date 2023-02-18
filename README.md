@@ -20,11 +20,25 @@ Create K8s clusters with Terraform on Linode Kubernetes Engine (LKE), a managed 
 4. Run ` terraform apply -var-file="terraform.tfvars"` to deploy the cluster. Now the cluster will be deployed and is ready to be connected to via `kubectl`
 5. Configure `kubectl` configs to connect to your cluster. This command will use the terraform output as an env var, decode it , and then insert it into the `kubectl` config file `kubeconfig.yaml`
     ```
-    export KUBE_VAR=`terraform output kubeconfig` && echo $KUBE_VAR | base64 -di > kube-config.yaml` 
+    export KUBE_VAR=`terraform output kubeconfig` && echo $KUBE_VAR | base64 -di > kubeconfig.yaml 
     ```
-6. Add the kubeconfig file to your $KUBECONFIG environment variable `export KUBECONFIG=kubeconfig.yaml`
-7. View your nodes ` kubectl get nodes`
-8. Tear down the resources you have created `terraform destroy --target linode_lke_cluster.saifk8s` 
+6. Add the kubeconfig file to your $KUBECONFIG environment variable
+```
+export KUBECONFIG=kubeconfig.yaml
+```
+7. View your nodes
+```
+kubectl get nodes
+```
+10. Tear down the resources you have created
+```
+terraform destroy --target linode_lke_cluster.saifk8s
+```
+11. Spin up the cluster again when you need it using
+```
+terraform plan
+terraform apply
+```
 
 ## Configure Terraform backend with Linode Object Storage
 
@@ -92,8 +106,11 @@ Above shows an update to the file since the last apply or destory command ran as
 ### Prerequisites
 [Git](https://www.linode.com/docs/guides/how-to-deploy-a-static-site-on-linode-kubernetes-engine/#install-git), [kubectl](https://www.linode.com/docs/guides/how-to-deploy-a-static-site-on-linode-kubernetes-engine/#install-kubectl), [Docker](https://www.linode.com/docs/guides/how-to-deploy-a-static-site-on-linode-kubernetes-engine/#install-docker), [Docker Hub Account](https://www.linode.com/docs/guides/how-to-deploy-a-static-site-on-linode-kubernetes-engine/#sign-up-for-a-docker-hub-account), [Hugo](https://www.linode.com/docs/guides/how-to-deploy-a-static-site-on-linode-kubernetes-engine/#install-hugo), and a [LKE cluster](https://www.linode.com/docs/guides/deploy-and-manage-a-cluster-with-linode-kubernetes-engine-a-tutorial/).
 
-### Create site using Hugo
-1. Clone this repo https://github.com/Saifalkayali/lke-saif-site
+### Create site using [Hugo](https://gohugo.io/)
+1. Pull down this repo
+```
+git clone https://github.com/Saifalkayali/lke-saif-site.git
+```
 2. Build image 
 ```
 docker build -t <DOCKER_HUB_USERNAME>/lke-saif-site:v1 .
@@ -106,4 +123,48 @@ docker run -p 8080:80 -d<DOCKER_HUB_USERNAME>/lke-saif-site:v1
 ```
 docker push <DOCKER_HUB_USERNAME>/lke-saif-site:v1
 ```
-5.  kubectl apply -f static-site-deployment.yaml
+5. Deploy Image to your K8s nodes
+```
+kubectl apply -f deployment.yaml
+```
+Output:
+```
+deployment.apps/static-site-deployment created
+```
+
+
+**NOTE:** ensure you've set your `KUBECONFIG` env var in the [Deploy the cluster ](https://github.com/Saifalkayali/terraform-k8s-linode#deploy-the-cluster)section  of this [README.md](https://github.com/Saifalkayali/terraform-k8s-linode#readme), otherwise you will get this error: 
+
+```
+Error from server (NotFound): the server could not find the requested resource
+```
+6. Create a service to provide web traffic loadbalancing to the 3 nodes serving the site
+```
+kubectl apply -f service.yaml
+```
+Output: 
+```
+service/static-site-service created
+```
+7. Check the status of the service
+```
+kubectl get services
+```
+Output: 
+```
+NAME                  TYPE           CLUSTER-IP      EXTERNAL-IP     PORT(S)        AGE
+kubernetes            ClusterIP      10.128.0.1      <none>          443/TCP        18h
+static-site-service   LoadBalancer   10.128.158.25   104.200.27.83   80:32587/TCP   112s
+```
+8. Ensure your pods that are running the site are in a `running` status
+```
+kubectl get pods
+```
+Output
+```
+NAME                                      READY   STATUS    RESTARTS   AGE
+static-site-deployment-75cfbb745b-2jt9n   1/1     Running   0          9m33s
+static-site-deployment-75cfbb745b-6hxct   1/1     Running   0          9m33s
+static-site-deployment-75cfbb745b-wh4rp   1/1     Running   0          9m33s
+```
+
