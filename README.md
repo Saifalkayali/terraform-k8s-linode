@@ -12,6 +12,7 @@ Create K8s clusters with Terraform on Linode Kubernetes Engine (LKE), a managed 
     - [Prerequisites](#prerequisites-1)
     - [Create site using Hugo](#create-site-using-hugo)
     - [Network Policy](#network-policy)
+    - [Tear Down The Site](#tear-down-the-site)
 
 
 
@@ -119,6 +120,8 @@ Above shows an update to the file since the last apply or destory command ran as
 
 ## Deploy a Site on LKE
 
+Deploy a site using the LKE cluster as a follow up from above Kubernetes sections. A container for a static site can be written simply which makes the site easy to deploy as a demo
+
 ### Prerequisites
 [Git](https://www.linode.com/docs/guides/how-to-deploy-a-static-site-on-linode-kubernetes-engine/#install-git), [kubectl](https://www.linode.com/docs/guides/how-to-deploy-a-static-site-on-linode-kubernetes-engine/#install-kubectl), [Docker](https://www.linode.com/docs/guides/how-to-deploy-a-static-site-on-linode-kubernetes-engine/#install-docker), [Docker Hub Account](https://www.linode.com/docs/guides/how-to-deploy-a-static-site-on-linode-kubernetes-engine/#sign-up-for-a-docker-hub-account), [Hugo](https://www.linode.com/docs/guides/how-to-deploy-a-static-site-on-linode-kubernetes-engine/#install-hugo), and a [LKE cluster](https://www.linode.com/docs/guides/deploy-and-manage-a-cluster-with-linode-kubernetes-engine-a-tutorial/).
 
@@ -187,4 +190,24 @@ static-site-service   LoadBalancer   10.128.158.25   104.200.27.83   80:32587/TC
 
 ### Network Policy
 Exposing the site to the public internet is simple, but can also carry a security risk. If the plan is to develop a site using Hugo and deploy it permanently, I would suggest configuring a a [K8s network policy](https://kubernetes.io/docs/concepts/services-networking/network-policies/) and referencing the [Linode Kubernetes Security Best Practices ](https://www.linode.com/docs/guides/kubernetes-security-best-practices/)
+
+### Tear Down The Site
+1. Remove the Loadbalancer Service type to remove the site's internet accessability
+```
+kubectl delete service static-site-service
+```
+2. Remove the pods that are hosting the site's containers to stop running the site
+```
+kubectl delete deployment static-site-deployment
+```
+3. confirm the pods have been removed
+```
+kubectl get pods
+```
+Output: 
+```
+No resources found in default namespace
+```
+4. This confirms that the site deployment and service have been removed to conclude tearing down the site.
+
 
